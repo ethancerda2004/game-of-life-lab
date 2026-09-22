@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Game of Life Lab</title>
+</head>
+<body>
+  <h1>Game of Life Lab</h1>
+  <p>My first cellular automaton project.</p>
+
+  <button id="stepButton">Step</button>
+  <button id="runButton">Run</button>
+<button id="pauseButton">Pause</button>
+<button id="resetButton">Reset</button>
+<button id="randomButton">Random</button>
+
+<label for="densitySlider">Density:</label>
+<input
+  type="range"
+  id="densitySlider"
+  min="0.05"
+  max="0.80"
+  step="0.05"
+  value="0.30"
+>
+<label for="speedSlider">Speed:</label>
+<input
+  type="range"
+  id="speedSlider"
+  min="1"
+  max="10"
+  value="5"
+>
+<br><br>
+  <canvas id="grid" width="600" height="400"
+        style="border: 1px solid black; background: white;">
+</canvas>
+<script src="script.js"></script>
+</body>
+</html>
