@@ -112,6 +112,13 @@ function stepSimulation() {
       }
     }
   }
+  for (let row = 0; row < rows; row++) {
+    for (let column = 0; column < columns; column++) {
+      if (Math.random() < noiseProbability) {
+        nextGrid[row][column] = 1 - nextGrid[row][column];
+      }
+    }
+  }
 
   for (let row = 0; row < rows; row++) {
     for (let column = 0; column < columns; column++) {
@@ -469,3 +476,13 @@ function sampleOneHundredRules() {
 document
   .getElementById("sampleRulesButton")
   .addEventListener("click", sampleOneHundredRules);
+
+  let noiseProbability = 0;
+
+const noiseSlider = document.getElementById("noiseSlider");
+const noiseValue = document.getElementById("noiseValue");
+
+noiseSlider.addEventListener("input", function () {
+  noiseProbability = Number(noiseSlider.value);
+  noiseValue.textContent = `${(noiseProbability * 100).toFixed(1)}%`;
+});
