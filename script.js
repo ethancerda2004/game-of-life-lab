@@ -103,11 +103,11 @@ function stepSimulation() {
       const neighbors = countNeighbors(row, column);
       const isAlive = grid[row][column] === 1;
 
-      if (isAlive && (neighbors === 2 || neighbors === 3)) {
+      if (isAlive && survivalRules.includes(neighbors)) {
         nextGrid[row][column] = 1;
       }
 
-      if (!isAlive && neighbors === 3) {
+      if (!isAlive && birthRules.includes(neighbors)) {
         nextGrid[row][column] = 1;
       }
     }
@@ -192,3 +192,30 @@ document
 document
   .getElementById("randomButton")
   .addEventListener("click", randomizeGrid);
+
+  let birthRules = [3];
+let survivalRules = [2, 3];
+
+function applyRules() {
+  const birthText = document.getElementById("birthRule").value;
+  const survivalText = document.getElementById("survivalRule").value;
+
+  const validRule = /^[0-8]*$/;
+
+  if (!validRule.test(birthText) || !validRule.test(survivalText)) {
+    alert("Rules can only contain numbers from 0 through 8.");
+    return;
+  }
+
+  birthRules = birthText.split("").map(Number);
+  survivalRules = survivalText.split("").map(Number);
+
+  document.getElementById("ruleDisplay").textContent =
+    `B${birthText}/S${survivalText}`;
+
+  pauseSimulation();
+}
+
+document
+  .getElementById("applyRulesButton")
+  .addEventListener("click", applyRules);
