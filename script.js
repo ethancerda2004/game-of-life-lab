@@ -219,3 +219,253 @@ function applyRules() {
 document
   .getElementById("applyRulesButton")
   .addEventListener("click", applyRules);
+
+  function createRandomRule() {
+  const birth = [];
+  const survival = [];
+
+  for (let count = 0; count <= 8; count++) {
+    if (Math.random() < 0.5) {
+      birth.push(count);
+    }
+
+    if (Math.random() < 0.5) {
+      survival.push(count);
+    }
+  }
+
+  return { birth, survival };
+}
+
+function createExperimentGrid(size, density) {
+  return Array.from(
+    { length: size },
+    () =>
+      Array.from(
+        { length: size },
+        () => Math.random() < density ? 1 : 0
+      )
+  );
+}
+
+function countExperimentNeighbors(testGrid, row, column) {
+  let neighbors = 0;
+  const size = testGrid.length;
+
+  for (let rowChange = -1; rowChange <= 1; rowChange++) {
+    for (
+      let columnChange = -1;
+      columnChange <= 1;
+      columnChange++
+    ) {
+      if (rowChange === 0 && columnChange === 0) {
+        continue;
+      }
+
+      const neighborRow = row + rowChange;
+      const neighborColumn = column + columnChange;
+
+      if (
+        neighborRow >= 0 &&
+        neighborRow < size &&
+        neighborColumn >= 0 &&
+        neighborColumn < size
+      ) {
+        neighbors += testGrid[neighborRow][neighborColumn];
+      }
+    }
+  }
+
+  return neighbors;
+}
+
+function stepExperimentGrid(testGrid, birth, survival) {
+  const size = testGrid.length;
+  const nextGrid = Array.from(
+    { length: size },
+    () => Array(size).fill(0)
+  );
+
+  for (let row = 0; row < size; row++) {
+    for (let column = 0; column < size; column++) {
+      const neighbors =
+        countExperimentNeighbors(testGrid, row, column);
+
+      const isAlive = testGrid[row][column] === 1;
+
+      if (isAlive && survival.includes(neighbors)) {
+        nextGrid[row][column] = 1;
+      }
+
+      if (!isAlive && birth.includes(neighbors)) {
+        nextGrid[row][column] = 1;
+      }
+    }
+  }
+
+  return nextGrid;
+}
+
+function countExperimentCells(testGrid) {
+  return testGrid
+    .flat()
+    .reduce((total, cell) => total + cell, 0);
+}
+
+function experimentGridKey(testGrid) {
+  return testGrid.flat().join("");
+}
+
+function testRule(rule) {
+  const size = 18;
+  const densities = [0.15, 0.30, 0.50];
+  const outcomes = [];
+  const finalDensities = [];
+  const activities = [];
+
+  for (const startingDensity of densities) {
+    let testGrid =
+      createExperimentGrid(size, startingDensity);
+
+    const initialLive = countExperimentCells(testGrid);
+    const seenGrids = new Map();
+    let outcome = "active";
+    let activity = 0;
+
+    for (let generation = 0; generation < 50; generation++) {
+      const key = experimentGridKey(testGrid);
+
+      if (seenGrids.has(key)) {
+        const period = generation - seenGrids.get(key);
+        outcome = period === 1 ? "stable" : "oscillation";
+        break;
+      }
+
+      seenGrids.set(key, generation);
+
+      const nextGrid = stepExperimentGrid(
+        testGrid,
+        rule.birth,
+        rule.survival
+      );
+
+      let changedCells = 0;
+
+      for (let row = 0; row < size; row++) {
+        for (let column = 0; column < size; column++) {
+          if (testGrid[row][column] !== nextGrid[row][column]) {
+            changedCells++;
+          }
+        }
+      }
+
+      activity = changedCells / (size * size);
+      testGrid = nextGrid;
+
+      if (countExperimentCells(testGrid) === 0) {
+        outcome = "extinction";
+        break;
+      }
+    }
+
+    const finalLive = countExperimentCells(testGrid);
+    const finalDensity = finalLive / (size * size);
+    const initialDensity = initialLive / (size * size);
+
+    if (outcome === "active") {
+      if (finalDensity > initialDensity + 0.15) {
+        outcome = "growth";
+      } else if (activity > 0.15) {
+        outcome = "disorder";
+      } else {
+        outcome = "mixed";
+      }
+    }
+
+    outcomes.push(outcome);
+    finalDensities.push(finalDensity);
+    activities.push(activity);
+  }
+
+  const outcomeCounts = {};
+
+  for (const outcome of outcomes) {
+    outcomeCounts[outcome] = (outcomeCounts[outcome] || 0) + 1;
+  }
+
+  const category = Object.keys(outcomeCounts).reduce(
+    (best, current) =>
+      outcomeCounts[current] > outcomeCounts[best]
+        ? current
+        : best
+  );
+
+  const averageFinalDensity =
+    finalDensities.reduce((sum, value) => sum + value, 0) /
+    finalDensities.length;
+
+  const averageActivity =
+    activities.reduce((sum, value) => sum + value, 0) /
+    activities.length;
+
+  return {
+    category,
+    averageFinalDensity,
+    averageActivity
+  };
+}
+
+function sampleOneHundredRules() {
+  const button = document.getElementById("sampleRulesButton");
+  const summary = document.getElementById("experimentSummary");
+  const output = document.getElementById("experimentResults");
+
+  button.disabled = true;
+  summary.textContent =
+    "Running 300 simulations. Please wait...";
+  output.textContent = "";
+
+  setTimeout(function () {
+    const results = [];
+    const categoryCounts = {};
+
+    for (let number = 1; number <= 100; number++) {
+      const rule = createRandomRule();
+      const measurement = testRule(rule);
+
+      const ruleName =
+        `B${rule.birth.join("")}/S${rule.survival.join("")}`;
+
+      results.push({
+        ruleName,
+        ...measurement
+      });
+
+      categoryCounts[measurement.category] =
+        (categoryCounts[measurement.category] || 0) + 1;
+    }
+
+    const categorySummary = Object.entries(categoryCounts)
+      .map(([category, count]) => `${category}: ${count}`)
+      .join(" | ");
+
+    summary.textContent =
+      `Completed 100 rules × 3 starting configurations. ${categorySummary}`;
+
+    output.textContent = results
+      .map(
+        (result, index) =>
+          `${index + 1}. ${result.ruleName} | ` +
+          `${result.category} | final density: ` +
+          `${(result.averageFinalDensity * 100).toFixed(1)}% | ` +
+          `activity: ${(result.averageActivity * 100).toFixed(1)}%`
+      )
+      .join("\n");
+
+    button.disabled = false;
+  }, 50);
+}
+
+document
+  .getElementById("sampleRulesButton")
+  .addEventListener("click", sampleOneHundredRules);
